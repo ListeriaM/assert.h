@@ -3,6 +3,9 @@
  * Documentation:
  *   STATIC_ASSERT(condition, message?): (may be a declaration)
  *     for static assertions at file, struct or function scope.
+ *   STATIC_ASSERT_UNIQ(id, condition, message?): (may be a declaration)
+ *     same as above, but receives a unique identifier to sidestep the
+ *     same-line limitation of STATIC_ASSERT() in older versions.
  *   STATIC_ASSERT_EXPR(condition, message?): (is a void expression)
  *     use this when an expression is required.
  *   ASSERT(condition):
@@ -18,27 +21,23 @@
 #define ASSERT_H_
 
 /* Interface */
-#ifndef STATIC_ASSERT
-# define STATIC_ASSERT(...) STATIC_ASSERT__IMPL(__VA_ARGS__, "", _)
-#endif
-
-#ifndef STATIC_ASSERT_EXPR
-# define STATIC_ASSERT_EXPR(...) STATIC_ASSERT_EXPR__IMPL(__VA_ARGS__, "", _)
-#endif
-
-#ifndef ASSERT
-# define ASSERT(condition) ((condition) ? (void)0 : ASSERT_FAILED)
-#endif
+#define STATIC_ASSERT(...) \
+    STATIC_ASSERT__IMPL(ASSERT__UNIQUE, __VA_ARGS__, #__VA_ARGS__, _)
+#define STATIC_ASSERT_UNIQ(id, ...) \
+    STATIC_ASSERT__IMPL(id, __VA_ARGS__, #id ": " #__VA_ARGS__, _)
+#define STATIC_ASSERT_EXPR(...) \
+    STATIC_ASSERT_EXPR__IMPL(__VA_ARGS__, #__VA_ARGS__, _)
+#define ASSERT(condition) ((condition) ? (void)0 : ASSERT_FAILED)
 
 
 /* Implementation */
 #if defined(__cpp_static_assert) || defined(static_assert) || \
     defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
-# define STATIC_ASSERT__IMPL(cond, msg, ...) static_assert(cond, msg)
-# define STATIC_ASSERT_EXPR__IMPL            STATIC_ASSERT__IMPL
+# define STATIC_ASSERT__IMPL(id, cond, msg, ...)  static_assert(cond, msg)
+# define STATIC_ASSERT_EXPR__IMPL(cond, msg, ...) static_assert(cond, msg)
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-# define STATIC_ASSERT__IMPL(cond, msg, ...) _Static_assert(cond, msg)
-# define STATIC_ASSERT_EXPR__IMPL            STATIC_ASSERT__IMPL
+# define STATIC_ASSERT__IMPL(id, cond, msg, ...)  _Static_assert(cond, msg)
+# define STATIC_ASSERT_EXPR__IMPL(cond, msg, ...) _Static_assert(cond, msg)
 #else
 # ifdef __COUNTER__
 #  define ASSERT__UNIQUE __COUNTER__
@@ -46,11 +45,10 @@
 #  define ASSERT__UNIQUE __LINE__
 # endif
 #
-# define ASSERT__CONCAT_(X, Y) X ## Y
-# define ASSERT__CONCAT(X, Y) ASSERT__CONCAT_(X, Y)
-#  /* A named bit-field of width of zero is an error */
-# define STATIC_ASSERT__IMPL(condition, ...)                   \
-     ;struct ASSERT__CONCAT(static_assertion_, ASSERT__UNIQUE) \
+# define ASSERT__CONCAT(X, Y) X ## Y
+#  /* A named bit-field of zero width is an error */
+# define STATIC_ASSERT__IMPL(id, condition, ...)                   \
+     ;struct ASSERT__CONCAT(static_assertion_, id)                 \
      { unsigned static_assertion_failed: (int)!!(condition); }
 # define STATIC_ASSERT_EXPR__IMPL(condition, ...) \
      ((void)sizeof((int[1 - 2*(int)!(condition)]){0}))
