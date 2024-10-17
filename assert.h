@@ -20,7 +20,6 @@
 #ifndef ASSERT_H_
 #define ASSERT_H_
 
-/* Interface */
 #define STATIC_ASSERT(...) \
     STATIC_ASSERT__IMPL(ASSERT__UNIQUE, __VA_ARGS__, #__VA_ARGS__, _)
 #define STATIC_ASSERT_UNIQ(id, ...) \
@@ -29,8 +28,6 @@
     STATIC_ASSERT_EXPR__IMPL(__VA_ARGS__, #__VA_ARGS__, _)
 #define ASSERT(condition) ((condition) ? (void)0 : ASSERT_FAILED)
 
-
-/* Implementation */
 #if defined(__cpp_static_assert) || defined(static_assert) || \
     defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
 # define STATIC_ASSERT__IMPL(id, cond, msg, ...)  static_assert(cond, msg)
@@ -54,25 +51,33 @@
      ((void)sizeof((int[1 - 2*(int)!(condition)]){0}))
 #endif
 
+#ifndef ASSERT_TRAP
+# if defined(__GNUC__)
+#  define ASSERT_TRAP __builtin_trap()
+# elif defined(_MSC_VER)
+#  define ASSERT_TRAP __debugbreak()
+# else
+#  define ASSERT_TRAP ((void)(*(volatile int *)0 = 0))
+# endif
+#endif
+
+#ifndef ASSERT_UNREACHABLE
+# if defined(unreachable)
+#  define ASSERT_UNREACHABLE unreachable()
+# elif defined(__GNUC__)
+#  define ASSERT_UNREACHABLE __builtin_unreachable()
+# elif defined(_MSC_VER)
+#  define ASSERT_UNREACHABLE __assume(0)
+# else /* undefined behavior, should be optimized out */
+#  define ASSERT_UNREACHABLE ((void)(*(int*)0 = 0))
+# endif
+#endif
+
 #ifndef ASSERT_FAILED
 # if defined(ASSERT_DEBUG) || defined(DEBUG)
-#  if defined(__GNUC__)
-#   define ASSERT_FAILED __builtin_trap()
-#  elif defined(_MSC_VER)
-#   define ASSERT_FAILED __debugbreak()
-#  else
-#   define ASSERT_FAILED ((void)(*(volatile int *)0 = 0))
-#  endif
+#  define ASSERT_FAILED ASSERT_TRAP
 # else
-#  if defined(unreachable)
-#   define ASSERT_FAILED unreachable()
-#  elif defined(__GNUC__)
-#   define ASSERT_FAILED __builtin_unreachable()
-#  elif defined(_MSC_VER)
-#   define ASSERT_FAILED __assume(0)
-#  else /* undefined behavior, should be optimized out */
-#   define ASSERT_FAILED ((void)(*(int*)0 = 0))
-#  endif
+#  define ASSERT_FAILED ASSERT_UNREACHABLE
 # endif
 #endif
 
