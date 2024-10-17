@@ -53,7 +53,7 @@
      ;struct ASSERT__CONCAT(static_assertion_, ASSERT__UNIQUE) \
      { unsigned static_assertion_failed: (int)!!(condition); }
 # define STATIC_ASSERT_EXPR__IMPL(condition, ...) \
-     ((void)sizeof(int[1 - 2*(int)!(condition)]))
+     ((void)sizeof((int[1 - 2*(int)!(condition)]){0}))
 #endif
 
 #ifndef ASSERT_FAILED
