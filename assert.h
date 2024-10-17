@@ -23,7 +23,7 @@
 #define STATIC_ASSERT(...) \
     STATIC_ASSERT__IMPL(ASSERT__UNIQUE, __VA_ARGS__, #__VA_ARGS__, _)
 #define STATIC_ASSERT_UNIQ(id, ...) \
-    STATIC_ASSERT__IMPL(id, __VA_ARGS__, #id ": " #__VA_ARGS__, _)
+    STATIC_ASSERT__IMPL(id_ ## id, __VA_ARGS__, #id ": " #__VA_ARGS__, _)
 #define STATIC_ASSERT_EXPR(...) \
     STATIC_ASSERT_EXPR__IMPL(__VA_ARGS__, #__VA_ARGS__, _)
 #define ASSERT(condition) ((condition) ? (void)0 : ASSERT_FAILED)
